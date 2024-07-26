@@ -61,14 +61,14 @@ pipeline {
         stage('Package Helm Chart') {
             steps {
                 script {
-                    sh 'helm package mychart --destination .'
+                    sh 'helm package helm/nanocharts --destination .'
                 }
             }
         }
         stage('Deploy Helm Chart') {
             steps {
                 script {
-                    sh 'helm upgrade --install myapp ./mychart-0.1.0.tgz --set image.tag=latest --namespace mynamespace'
+                    sh 'helm upgrade --install nanoapp ./mychart-0.1.0.tgz --set image.tag=latest --namespace nano'
                 }
             }
         }
