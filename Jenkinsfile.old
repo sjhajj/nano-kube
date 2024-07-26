@@ -9,8 +9,6 @@ pipeline {
         ECR_REPO_NAME = 'nano-kube-repo'
         ECR_URI = "168009156019.dkr.ecr.us-east-1.amazonaws.com/nano-kube-repo"
         APP_REGISTRY="168009156019.dkr.ecr.us-east-1.amazonaws.com"
-        CHART_NAME = 'nanoapp'
-        CHART_VERSION = '0.1.0'
     }
 
     stages {
@@ -20,10 +18,30 @@ pipeline {
             }
         }
 
+        stage('Create .tar.gz Archive') {
+            steps {
+                script {
+                    // Create a temporary directory to store the tarball
+                    sh 'mkdir -p /tmp/tarball'
+                    // Archive all files from the root directory, excluding the .git directory and move it to the temporary directory
+                    sh 'tar --exclude=./.git -czvf /tmp/tarball/nano.tar.gz .'
+                    // Move the tarball back to the workspace
+                    sh 'mv /tmp/tarball/nano.tar.gz .'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Tag Docker Image') {
+            steps {
+                script {
                     sh "docker tag ${IMAGE_NAME}:latest ${ECR_URI}:latest"
                 }
             }
@@ -43,17 +61,14 @@ pipeline {
         stage('Package Helm Chart') {
             steps {
                 script {
-                    // This command assumes the helm chart is in a directory called 'helm/nanoapp' within your repo
-                    sh "helm package helm/${CHART_NAME} --version ${CHART_VERSION} --destination ."
+                    sh 'helm package helm/nanocharts --destination .'
                 }
             }
         }
-
         stage('Deploy Helm Chart') {
             steps {
                 script {
-                    // Ensures the deployment uses the packaged chart from the previous stage
-                    sh "helm upgrade --install ${CHART_NAME} ./${CHART_NAME}-${CHART_VERSION}.tgz --set image.tag=latest --namespace nano"
+                    sh 'helm upgrade --install nanoapp ./mychart-0.1.0.tgz --set image.tag=latest --namespace nano'
                 }
             }
         }
@@ -64,10 +79,10 @@ pipeline {
             cleanWs()
         }
         success {
-            echo 'Docker image has been successfully pushed to AWS ECR and application deployed via Helm.'
+            echo 'Docker image has been successfully pushed to AWS ECR.'
         }
         failure {
-            echo 'Failed to push the Docker image to AWS ECR or deploy the application via Helm.'
+            echo 'Failed to push the Docker image to AWS ECR.'
         }
     }
 }
