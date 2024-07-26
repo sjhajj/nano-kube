@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nanoapp
+  labels:
+    app: nanoapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nanoapp
+  template:
+    metadata:
+      labels:
+        app: nanoapp
+    spec:
+      containers:
+      - name: myapp-container
+        image: 168009156019.dkr.ecr.us-east-1.amazonaws.com/nano-kube-repo:latest
+        ports:
+        - containerPort: 80
